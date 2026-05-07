@@ -789,7 +789,7 @@ async function pollAlchemy(network, direction) {
 
 async function pollEtherscan(action) {
   if (!ETHERSCAN_API_KEY || !WALLET_ADDRESS) return [];
-  const url = `https://api.etherscan.io/api?module=account&action=${action}&address=${WALLET_ADDRESS}&startblock=0&endblock=99999999&page=1&offset=20&sort=desc&apikey=${ETHERSCAN_API_KEY}`;
+  const url = `https://api.etherscan.io/v2/api?chainid=1&module=account&action=${action}&address=${WALLET_ADDRESS}&startblock=0&endblock=99999999&page=1&offset=20&sort=desc&apikey=${ETHERSCAN_API_KEY}`;
   try {
     const response = await fetch(url);
     const data = await response.json();
