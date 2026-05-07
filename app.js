@@ -862,7 +862,7 @@ async function pollWalletTransactions() {
       const group = txGroups[key];
       const maxTs = group.timeStamp;
 
-      if (isFirstWalletPoll && maxTs < nowSecs - 300) {
+      if (maxTs < nowSecs - 600) {
         for (const tx of group.transfers) {
           const uniqueId = `${tx.network}-${tx.hash}-${tx.category}-${tx.value || 0}-${tx.tokenId || 0}`;
           processedTransfers.add(uniqueId);
