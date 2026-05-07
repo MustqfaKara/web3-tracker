@@ -742,7 +742,7 @@ async function sendTelegramText(text) {
   }
 }
 
-let seenWalletTxHashes = new Set();
+let processedTransfers = new Set();
 let isFirstWalletPoll = true;
 
 async function pollAlchemy(network, direction) {
@@ -811,12 +811,13 @@ async function pollWalletTransactions() {
       pollAlchemy('base', 'to')
     ]);
 
-    const [ethNormal, ethInternal, ethErc20, ethNft] = await Promise.all([
-      pollEtherscan('txlist'),
-      pollEtherscan('txlistinternal'),
-      pollEtherscan('tokentx'),
-      pollEtherscan('tokennfttx')
-    ]);
+    const ethNormal = await pollEtherscan('txlist');
+    await new Promise(r => setTimeout(r, 250));
+    const ethInternal = await pollEtherscan('txlistinternal');
+    await new Promise(r => setTimeout(r, 250));
+    const ethErc20 = await pollEtherscan('tokentx');
+    await new Promise(r => setTimeout(r, 250));
+    const ethNft = await pollEtherscan('tokennfttx');
 
     const normalizeEtherscan = (tx, category) => {
         const decimals = tx.tokenDecimal ? Number(tx.tokenDecimal) : 18;
@@ -860,12 +861,12 @@ async function pollWalletTransactions() {
       const group = txGroups[key];
       const maxTs = group.timeStamp;
 
-      if (isFirstWalletPoll) {
-        seenWalletTxHashes.add(key);
-        if (maxTs < nowSecs - 300) continue;
-      } else {
-        if (seenWalletTxHashes.has(key)) continue;
-        seenWalletTxHashes.add(key);
+      if (isFirstWalletPoll && maxTs < nowSecs - 300) {
+        for (const tx of group.transfers) {
+          const uniqueId = `${tx.network}-${tx.hash}-${tx.category}-${tx.value || 0}-${tx.tokenId || 0}`;
+          processedTransfers.add(uniqueId);
+        }
+        continue;
       }
 
       const me = WALLET_ADDRESS.toLowerCase();
@@ -875,10 +876,19 @@ async function pollWalletTransactions() {
       
       let msg = `<b>${networkIcon} ${networkName} Islemi Tespit Edildi!</b>\n\n`;
       let details = [];
+      let hasNew = false;
 
       group.transfers.sort((a, b) => a.category.localeCompare(b.category));
 
       for (const tx of group.transfers) {
+         const uniqueId = `${tx.network}-${tx.hash}-${tx.category}-${tx.value || 0}-${tx.tokenId || 0}`;
+         
+         const isNew = isFirstWalletPoll || !processedTransfers.has(uniqueId);
+         if (!isFirstWalletPoll) processedTransfers.add(uniqueId);
+
+         if (!isNew) continue;
+         hasNew = true;
+
          const val = tx.value !== null ? tx.value : 1; 
          const asset = tx.asset || 'Bilinmeyen Token';
 
@@ -903,7 +913,7 @@ async function pollWalletTransactions() {
          ? `https://basescan.org/tx/${group.hash}` 
          : `https://etherscan.io/tx/${group.hash}`;
 
-      if (details.length > 0) {
+      if (hasNew && details.length > 0) {
          msg += details.join('\n');
          msg += `\n\n<a href="${explorerLink}">${explorerName}'de Goruntule</a>`;
          await sendTelegramText(msg);
