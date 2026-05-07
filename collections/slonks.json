@@ -1,0 +1,8 @@
+{
+  "slug": "slonks",
+  "chain": "ethereum",
+  "traitType": "Slop Level",
+  "traitMin": 2,
+  "traitMax": 6,
+  "maxPriceEth": 0.14
+}
