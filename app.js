@@ -831,6 +831,7 @@ async function pollWalletTransactions() {
             to: tx.to,
             from: tx.from,
             tokenId: tx.tokenID,
+            contractAddress: tx.contractAddress,
             metadata: {
                 blockTimestamp: new Date(Number(tx.timeStamp) * 1000).toISOString()
             }
@@ -876,6 +877,7 @@ async function pollWalletTransactions() {
       
       let msg = `<b>${networkIcon} ${networkName} Islemi Tespit Edildi!</b>\n\n`;
       let details = [];
+      let nftLinks = [];
       let hasNew = false;
 
       group.transfers.sort((a, b) => a.category.localeCompare(b.category));
@@ -901,6 +903,13 @@ async function pollWalletTransactions() {
          } else if (tx.category === 'erc721') {
             const tokenIdHex = tx.tokenId || tx.erc721TokenId;
             const tokenIdDec = tokenIdHex ? BigInt(tokenIdHex).toString() : 'Bilinmeyen';
+            
+            const contractAddr = tx.contractAddress || (tx.rawContract && tx.rawContract.address);
+            if (contractAddr && tokenIdDec !== 'Bilinmeyen') {
+                const chainPrefix = tx.network === 'base' ? 'base' : 'ethereum';
+                nftLinks.push(`<a href="https://opensea.io/assets/${chainPrefix}/${contractAddr}/${tokenIdDec}">OpenSea'de Goruntule (#${tokenIdDec})</a>`);
+            }
+
             if (tx.to && tx.to.toLowerCase() === me) {
                details.push(`🖼️ <b>NFT Alindi:</b> ${asset} #${tokenIdDec}`);
             } else if (tx.from && tx.from.toLowerCase() === me) {
@@ -915,6 +924,9 @@ async function pollWalletTransactions() {
 
       if (hasNew && details.length > 0) {
          msg += details.join('\n');
+         if (nftLinks.length > 0) {
+            msg += `\n\n${nftLinks.join('\n')}`;
+         }
          msg += `\n\n<a href="${explorerLink}">${explorerName}'de Goruntule</a>`;
          await sendTelegramText(msg);
       }
