@@ -21,6 +21,7 @@ const EVENT_LOOKBACK_SECONDS = Number(process.env.EVENT_LOOKBACK_SECONDS || 300)
 
 const WALLET_ADDRESS = process.env.WALLET_ADDRESS || '';
 const ALCHEMY_API_KEY = process.env.ALCHEMY_API_KEY || '';
+const ETHERSCAN_API_KEY = process.env.ETHERSCAN_API_KEY || '';
 const WALLET_POLL_INTERVAL_MS = Number(process.env.WALLET_POLL_INTERVAL_MS || 30000);
 
 if (!['auto', 'stream', 'poll'].includes(WATCH_MODE)) {
@@ -786,16 +787,63 @@ async function pollAlchemy(network, direction) {
   return [];
 }
 
+async function pollEtherscan(action) {
+  if (!ETHERSCAN_API_KEY || !WALLET_ADDRESS) return [];
+  const url = `https://api.etherscan.io/api?module=account&action=${action}&address=${WALLET_ADDRESS}&startblock=0&endblock=99999999&page=1&offset=20&sort=desc&apikey=${ETHERSCAN_API_KEY}`;
+  try {
+    const response = await fetch(url);
+    const data = await response.json();
+    if (data.status === '1' && data.result) {
+       return data.result.map(tx => ({ ...tx, action_type: action }));
+    } else if (data.status === '0' && data.message !== 'No transactions found') {
+       console.warn(`[wallet] Etherscan API warning (${action}): ${data.result}`);
+    }
+  } catch (error) {
+    console.error(`[wallet] Etherscan API error (${action}): ${error.message}`);
+  }
+  return [];
+}
+
 async function pollWalletTransactions() {
   try {
-    const [ethFrom, ethTo, baseFrom, baseTo] = await Promise.all([
-      pollAlchemy('ethereum', 'from'),
-      pollAlchemy('ethereum', 'to'),
+    const [baseFrom, baseTo] = await Promise.all([
       pollAlchemy('base', 'from'),
       pollAlchemy('base', 'to')
     ]);
 
-    const allTransfers = [...ethFrom, ...ethTo, ...baseFrom, ...baseTo];
+    const [ethNormal, ethInternal, ethErc20, ethNft] = await Promise.all([
+      pollEtherscan('txlist'),
+      pollEtherscan('txlistinternal'),
+      pollEtherscan('tokentx'),
+      pollEtherscan('tokennfttx')
+    ]);
+
+    const normalizeEtherscan = (tx, category) => {
+        const decimals = tx.tokenDecimal ? Number(tx.tokenDecimal) : 18;
+        const val = unitsToNumber(tx.value, decimals);
+        return {
+            hash: tx.hash,
+            network: 'ethereum',
+            category: category,
+            asset: tx.tokenSymbol || 'ETH',
+            value: val,
+            to: tx.to,
+            from: tx.from,
+            tokenId: tx.tokenID,
+            metadata: {
+                blockTimestamp: new Date(Number(tx.timeStamp) * 1000).toISOString()
+            }
+        };
+    };
+
+    const ethTransfers = [
+      ...ethNormal.map(tx => normalizeEtherscan(tx, 'external')),
+      ...ethInternal.map(tx => normalizeEtherscan(tx, 'internal')),
+      ...ethErc20.map(tx => normalizeEtherscan(tx, 'erc20')),
+      ...ethNft.map(tx => normalizeEtherscan(tx, 'erc721'))
+    ];
+
+    const allTransfers = [...ethTransfers, ...baseFrom, ...baseTo];
     const txGroups = {};
 
     for (const tx of allTransfers) {
