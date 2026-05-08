@@ -822,6 +822,13 @@ async function pollWalletTransactions() {
     const normalizeEtherscan = (tx, category) => {
         const decimals = tx.tokenDecimal ? Number(tx.tokenDecimal) : 18;
         const val = unitsToNumber(tx.value, decimals);
+        
+        let fee = null;
+        if (tx.gasPrice && tx.gasUsed) {
+            const feeWei = BigInt(tx.gasPrice) * BigInt(tx.gasUsed);
+            fee = unitsToNumber(feeWei.toString(), 18);
+        }
+
         return {
             hash: tx.hash,
             network: 'ethereum',
@@ -832,6 +839,7 @@ async function pollWalletTransactions() {
             from: tx.from,
             tokenId: tx.tokenID,
             contractAddress: tx.contractAddress,
+            fee: fee,
             metadata: {
                 blockTimestamp: new Date(Number(tx.timeStamp) * 1000).toISOString()
             }
@@ -879,6 +887,7 @@ async function pollWalletTransactions() {
       let details = [];
       let nftLinks = [];
       let hasNew = false;
+      let feeMsg = null;
 
       group.transfers.sort((a, b) => a.category.localeCompare(b.category));
 
@@ -890,6 +899,10 @@ async function pollWalletTransactions() {
 
          if (!isNew) continue;
          hasNew = true;
+
+         if (tx.fee !== null && tx.fee !== undefined && tx.from && tx.from.toLowerCase() === me && !feeMsg) {
+             feeMsg = `💸 <b>Fee:</b> ${tx.fee} ETH`;
+         }
 
          const val = tx.value !== null ? tx.value : 1; 
          const asset = tx.asset || 'Bilinmeyen Token';
@@ -924,6 +937,9 @@ async function pollWalletTransactions() {
 
       if (hasNew && details.length > 0) {
          msg += details.join('\n');
+         if (feeMsg) {
+            msg += `\n${feeMsg}`;
+         }
          if (nftLinks.length > 0) {
             msg += `\n\n${nftLinks.join('\n')}`;
          }
