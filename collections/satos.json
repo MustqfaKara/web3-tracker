@@ -1,0 +1,9 @@
+{
+  "slug": "satos",
+  "name": "Satos",
+  "chain": "ethereum",
+  "contract": "0xde52a8da4085da1a616276b0026a91fc48ba3181",
+  "traitType": "Rarity Rank",
+  "traitMax": 50,
+  "maxPriceRelativeToFloor": 1.50
+}

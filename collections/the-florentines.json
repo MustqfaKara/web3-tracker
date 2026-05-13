@@ -1,0 +1,19 @@
+{
+  "slug": "the-florentines",
+  "name": "The Florentines",
+  "chain": "ethereum",
+  "enabled": true,
+  "traitMatchMode": "any",
+  "maxPriceEth": 0.1,
+  "traitFilters": [
+    {
+      "traitType": "Base",
+      "traitValues": [
+        "DaVinci",
+        "Medici",
+        "Michelangelo",
+        "da Vinci"
+      ]
+    }
+  ]
+}

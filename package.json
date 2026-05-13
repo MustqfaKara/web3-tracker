@@ -1,11 +1,15 @@
 {
-  "name": "opensea-listing-watcher",
-  "version": "1.0.0",
+  "name": "web3-tracker",
+  "version": "2.0.0",
   "private": true,
   "type": "module",
   "scripts": {
     "start": "node app.js",
-    "check": "node --check app.js"
+    "once": "node app.js --once",
+    "dry-run": "node app.js --dry-run",
+    "debug": "node app.js --debug",
+    "check": "node --check app.js",
+    "test": "node --test 'tests/*.test.js'"
   },
   "dependencies": {
     "@opensea/stream-js": "^0.2.1",

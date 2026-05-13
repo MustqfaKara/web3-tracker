@@ -1,0 +1,21 @@
+{
+  "slug": "ferrymanurns",
+  "chain": "ethereum",
+  "enabled": true,
+  "maxPriceEth": 0.1,
+  "traitFilters": [
+    {
+      "traitType": "Tier",
+      "traitValues": [
+        "Merchant",
+        "Noble",
+        "Lord"
+      ]
+    }
+  ],
+  "traitPriceLimits": {
+    "Lord": 0.2,
+    "Noble": 0.02,
+    "Merchant": 0.01
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "slug": "backpunks",
+  "name": "BackPunks",
+  "chain": "ethereum",
+  "contract": "0xe10e26899704f77c2c3927b53ece41a65f913c0d",
+  "isRevealed": true,
+  "maxPriceEth": 0.02,
+  "specialTraits": [
+    "Zombie",
+    "Ape",
+    "Alien"
+  ],
+  "traitCategories": {
+    "Zombie": "Type",
+    "Ape": "Type",
+    "Alien": "Type"
+  }
+}
